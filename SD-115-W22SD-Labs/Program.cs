@@ -8,11 +8,11 @@ hotel.Clients = new List<Client>
 };
 hotel.Rooms = new List<Room>
 {
-    new Room("101", 2),
-    new Room("102", 3),
-    new Room("103", 3),
-    new Room("201", 4),
-    new Room("202", 4),
+    new Room(101, 2),
+    new Room(102, 3),
+    new Room(103, 3),
+    new Room(201, 4),
+    new Room(202, 4),
 };
 
 try
@@ -29,9 +29,9 @@ catch (Exception ex)
 
 try
 {
-    Room room101 = hotel.GetRoom("101");
+    Room room101 = hotel.GetRoom(101);
     Console.WriteLine(room101.Number);
-    Room room501 = hotel.GetRoom("501");
+    Room room501 = hotel.GetRoom(501);
     Console.WriteLine(room501.Number);
 }
 catch (Exception ex)
@@ -39,14 +39,14 @@ catch (Exception ex)
     Console.WriteLine(ex.Message);
 }
 
-hotel.AutomaticReservation(1, 3);
+hotel.AutomaticReservation(1, 3, DateTime.Now.AddHours(4));
 
-foreach(Room room in hotel.GetVacantRooms())
+foreach (Room room in hotel.GetVacantRooms())
 {
     Console.WriteLine(room.Number);
 }
 
-foreach(Client client in hotel.TopThreeClient())
+foreach (Client client in hotel.TopThreeClient())
 {
     Console.WriteLine(client.Name);
 }
@@ -78,7 +78,7 @@ class Hotel
         return Reservations.First((reservation) => reservation.Id == id);
     }
 
-    public Room GetRoom(string roomNumber)
+    public Room GetRoom(int roomNumber)
     {
         return Rooms.First((room) => room.Number == roomNumber);
     }
@@ -93,16 +93,60 @@ class Hotel
         return Clients.OrderByDescending((client) => client.Reservations.Count).Take(3).ToList();
     }
 
-    public Reservation AutomaticReservation(int clientId, int occupants)
+    public Reservation AutomaticReservation(int clientId, int occupants, DateTime startDate)
     {
         Room availableRoom = Rooms.First((room) => room.Capacity >= occupants);
         Client client = GetClient(clientId);
-        Reservation reservation = new Reservation(occupants, client, availableRoom);
+        Reservation reservation = new Reservation(occupants, client, availableRoom, startDate);
         Reservations.Add(reservation);
         client.Reservations.Add(reservation);
         availableRoom.Occupied = true;
         availableRoom.Reservations.Add(reservation);
         return reservation;
+    }
+
+    public void Checkin(string clientName, DateTime startDate)
+    {
+        Reservation reservation = Reservations.First((reservation) => reservation.Client.Name == clientName);
+        if (startDate.Date == reservation.StartDate)
+        {
+            reservation.Current = true;
+        }
+    }
+
+    public void CheckoutRoom(int roomNumber)
+    {
+        Reservation reservation = Reservations.First((reservation) => reservation.Room.Number == roomNumber);
+        reservation.Client.Reservations.Remove(reservation);
+        reservation.Room.Reservations.Remove(reservation);
+        reservation.Room.Occupied = false;
+    }
+
+    public void CheckoutRoom(string clientName)
+    {
+        Reservation reservation = Reservations.First((reservation) => reservation.Client.Name == clientName);
+        reservation.Client.Reservations.Remove(reservation);
+        reservation.Room.Reservations.Remove(reservation);
+        reservation.Room.Occupied = false;
+    }
+
+    public int TotalCapacityRemaining()
+    {
+        int totalCapacity = Rooms.Aggregate(0, (prev, room) => prev + room.Capacity);
+        int totalOccupants = Reservations.Aggregate(0, (prev, reservation) => reservation.Occupants);
+        return totalCapacity - totalOccupants;
+    }
+
+    public int AverageOccupancyPercentage()
+    {
+        int totalCapacity = Rooms.Aggregate(0, (prev, room) => prev + room.Capacity);
+        int totalOccupants = Reservations.Aggregate(0, (prev, reservation) => reservation.Occupants);
+        return (totalOccupants / totalCapacity) * 100;
+    }
+
+    public List<Reservation> FutureBookings()
+    {
+        return Reservations.Where((reservation) => !reservation.Current).ToList();
     }
 }
 
@@ -125,12 +169,12 @@ class Client
 
 class Room
 {
-    public string Number { get; set; }
+    public int Number { get; set; }
     public int Capacity { get; set; }
     public bool Occupied { get; set; }
     public List<Reservation> Reservations { get; set; }
 
-    public Room(string number, int capacity)
+    public Room(int number, int capacity)
     {
         Number = number;
         Capacity = capacity;
@@ -143,7 +187,10 @@ class Room
 class Reservation
 {
     public int Id { get; set; }
-    public DateTime Date { get; set; }
+    public DateTime Created { get; set; }
+    public DateTime StartDate { get; set; }
+
+    public bool Current { get; set; }
     public int Occupants { get; set; }
     public bool IsCurrent { get; set; }
     public Client Client { get; set; }
@@ -151,10 +198,12 @@ class Reservation
 
     private static int IdCounter = 0;
 
-    public Reservation(int occupants, Client client, Room room)
+    public Reservation(int occupants, Client client, Room room, DateTime startDate)
     {
         Id = IdCounter++;
-        Date = DateTime.Now;
+        Created = DateTime.Now;
+        StartDate = startDate;
+        Current = false;
         Occupants = occupants;
         IsCurrent = true;
         Client = client;
