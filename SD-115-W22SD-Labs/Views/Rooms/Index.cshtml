@@ -1,0 +1,21 @@
+﻿@model IEnumerable<SD_115_W22SD_Labs.Models.Room>
+
+<h1>All Rooms</h1>
+
+<ul>
+    @foreach (Room room in @Model)
+    {
+        <li>
+            Number: @room.Number,
+            Capacity: @room.Capacity
+            @if (room.Occupied)
+            {
+                @: <span>(OCCUPIED: @room.Occupants)</span>
+            }
+            else
+            {
+                @: <span>(UNOCCUPIED)</span>
+            }
+        </li>
+    }
+</ul>
