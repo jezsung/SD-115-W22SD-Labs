@@ -105,12 +105,15 @@ class Hotel
         return reservation;
     }
 
-    public void Checkin(string clientName, DateTime startDate)
+    public void Checkin(string clientName)
     {
-        Reservation reservation = Reservations.First((reservation) => reservation.Client.Name == clientName);
-        if (startDate.Date == reservation.StartDate)
+        Client client = Clients.First((client) => client.Name == clientName);
+        foreach (Reservation reservation in client.Reservations)
         {
-            reservation.Current = true;
+            if (reservation.StartDate == DateTime.Today)
+            {
+                reservation.IsCurrent = true;
+            }
         }
     }
 
@@ -146,7 +149,7 @@ class Hotel
 
     public List<Reservation> FutureBookings()
     {
-        return Reservations.Where((reservation) => !reservation.Current).ToList();
+        return Reservations.Where((reservation) => !reservation.IsCurrent).ToList();
     }
 }
 
@@ -189,8 +192,6 @@ class Reservation
     public int Id { get; set; }
     public DateTime Created { get; set; }
     public DateTime StartDate { get; set; }
-
-    public bool Current { get; set; }
     public int Occupants { get; set; }
     public bool IsCurrent { get; set; }
     public Client Client { get; set; }
@@ -203,9 +204,8 @@ class Reservation
         Id = IdCounter++;
         Created = DateTime.Now;
         StartDate = startDate;
-        Current = false;
         Occupants = occupants;
-        IsCurrent = true;
+        IsCurrent = false;
         Client = client;
         Room = room;
     }
