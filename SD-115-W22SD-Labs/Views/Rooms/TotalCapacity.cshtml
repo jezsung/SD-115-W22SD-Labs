@@ -1,0 +1,28 @@
+﻿@model IEnumerable<SD_115_W22SD_Labs.Models.Room>
+
+<style>
+    .warning {
+        color: red;
+    }
+</style>
+
+
+@if (ViewBag.TotalNumberOfRoomRemaining == 0)
+{
+    <h2 color="warning">No more than 25 employees should be in this building, according to local fire codes.</h2>
+}
+else
+{
+    <h2>Total Number Of Room Remaining: @ViewBag.TotalNumberOfRoomRemaining</h2>
+}
+
+<ul>
+    @foreach (Room room in @Model)
+    {
+        <li>
+            Number: @room.Number,
+            Capacity: @room.Capacity,
+            Occupants: @room.Occupants
+        </li>
+    }
+</ul>
